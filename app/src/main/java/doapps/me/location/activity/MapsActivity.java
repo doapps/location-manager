@@ -1,6 +1,7 @@
 package doapps.me.location.activity;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -22,6 +23,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import doapps.me.location.R;
+import doapps.me.location.util.GPSMonitor;
 import doapps.me.location.util.GPSTracker;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -54,7 +56,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         gpsTracker = new GPSTracker(this);
-        Log.e("COORDINATES", gpsTracker.getLatitude() + ", "  + gpsTracker.getLongitude());
+        Log.e("COORDINATES", gpsTracker.getLatitude() + ", " + gpsTracker.getLongitude());
+
+        //  startService(new Intent(this, GPSMonitor.class));
     }
 
     @Override
@@ -73,7 +77,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     PETICION_PERMISO_LOCALIZACION);
         } else {
-
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -86,15 +89,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 @Override
                                 public void run() {
 
-                                    GPSTracker gpsTracker = new GPSTracker(MapsActivity.this);
-                                    addMarket(gpsTracker.getLatitude(), gpsTracker.getLongitude()
-                                    );
+                                    //  GPSTracker gpsTracker = new GPSTracker(MapsActivity.this);
+                                    addMarket(gpsTracker.getLatitude(), gpsTracker.getLongitude());
 
                                     latitude.setText("" + gpsTracker.getLatitude());
                                     longitude.setText("" + gpsTracker.getLongitude());
 
-                                    //Log.e("LA", "" + gpsTracker.getLatitude());
-                                    //Log.e("LO", "" + gpsTracker.getLongitude());
+                                    Log.e("LA", "" + gpsTracker.getLatitude() + " LO: " + gpsTracker.getLongitude());
                                 }
                             });
 
@@ -105,7 +106,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }
             }).start();
-
         }
     }
 
