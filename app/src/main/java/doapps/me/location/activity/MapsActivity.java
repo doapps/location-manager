@@ -3,9 +3,6 @@ package doapps.me.location.activity;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -39,9 +36,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Marker marker;
 
     private GPSTracker gpsTracker;
-
-    boolean isFirst;
-
     private static final int LOCATION_PERMISSION = 100;
 
     @Override
@@ -54,8 +48,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        gpsTracker = new GPSTracker(this);
     }
 
     @Override
@@ -63,22 +55,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         googleMap.getUiSettings().setMapToolbarEnabled(false);
         mMap = googleMap;
 
-        myLocation();
+        showLocation();
     }
 
-    public void myLocation() {
+    public void showLocation() {
         if (ActivityCompat.checkSelfPermission(MapsActivity.this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
+            Log.e("showLocation", "1");
             ActivityCompat.requestPermissions(MapsActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION);
-
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION);
         } else {
-            gpsTracker = new GPSTracker(this);
-
+            Log.e("showLocation", "2");
+            stopService(new Intent(this, GPSMonitor.class));
             startService(new Intent(this, GPSMonitor.class));
-
+            gpsTracker = new GPSTracker(this);
             if (gpsTracker.canGetLocation) {
                 addMarket(gpsTracker.getLatitude(), gpsTracker.getLongitude());
 
@@ -89,20 +80,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void addMarket(double lat, double lng) {
-        if (!isFirst) {
-            isFirst = true;
+        if (mMap != null) {
             LatLng coordinate = new LatLng(lat, lng);
-
             CameraUpdate location = CameraUpdateFactory.newLatLngZoom(coordinate, 16);
 
-            if (mMap == null) {
-            } else {
-                marker = mMap.addMarker(new MarkerOptions().position(coordinate)
-                        .draggable(false));
+            if (marker == null) {
+                marker = mMap.addMarker(new MarkerOptions().position(coordinate).draggable(false));
                 mMap.animateCamera(location);
+            } else {
+                marker.setPosition(new LatLng(lat, lng));
             }
-        } else {
-            marker.setPosition(new LatLng(lat, lng));
         }
     }
 
@@ -110,7 +97,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == LOCATION_PERMISSION) {
-            myLocation();
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.e("Permission", "granded");
+                showLocation();
+            }
         }
     }
 }

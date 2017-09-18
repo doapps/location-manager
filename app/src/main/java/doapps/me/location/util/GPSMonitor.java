@@ -34,11 +34,13 @@ public class GPSMonitor extends Service {
     public void onCreate() {
         super.onCreate();
 
-        initializeLocationManager();
-        ThreadConnectingSocket();
+        Log.e("GPSMonitor", "onCreate");
 
         if (ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            initializeLocationManager();
+            ThreadConnectingSocket();
 
             try {
                 mLocationManager.requestLocationUpdates(
@@ -56,6 +58,8 @@ public class GPSMonitor extends Service {
             } catch (IllegalArgumentException ex) {
                 ex.printStackTrace();
             }
+        } else {
+            Log.e("permission", "denied");
         }
     }
 
