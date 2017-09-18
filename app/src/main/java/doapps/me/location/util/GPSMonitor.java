@@ -18,19 +18,17 @@ import android.util.Log;
  */
 
 public class GPSMonitor extends Service {
-    private static final String TAG = "TrackerService";
     private LocationManager mLocationManager = null;
+
+    public static double latitude, longitude;
 
     private static final int LOCATION_INTERVAL = 1000;
     private static final float LOCATION_DISTANCE = 0;
-
-    public static double latitude, longitude;
 
     LocationListener[] mLocationListeners = new LocationListener[]{
             new LocationListener(LocationManager.GPS_PROVIDER),
             new LocationListener(LocationManager.NETWORK_PROVIDER)
     };
-
 
     @Override
     public void onCreate() {
@@ -39,21 +37,25 @@ public class GPSMonitor extends Service {
         initializeLocationManager();
         ThreadConnectingSocket();
 
-        try {
-            mLocationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE, mLocationListeners[1]);
-        } catch (java.lang.SecurityException ex) {
-            Log.e(TAG, "fail to request location update, ignore", ex);
-        } catch (IllegalArgumentException ex) {
-            Log.e(TAG, "network provider does not exist, " + ex.getMessage());
-        }
-        try {
-            mLocationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE, mLocationListeners[0]);
-        } catch (java.lang.SecurityException ex) {
-            Log.e(TAG, "fail to request location update, ignore", ex);
-        } catch (IllegalArgumentException ex) {
-            Log.e(TAG, "gps provider does not exist " + ex.getMessage());
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            try {
+                mLocationManager.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE, mLocationListeners[1]);
+            } catch (java.lang.SecurityException ex) {
+                ex.printStackTrace();
+            } catch (IllegalArgumentException ex) {
+                ex.printStackTrace();
+            }
+            try {
+                mLocationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE, mLocationListeners[0]);
+            } catch (java.lang.SecurityException ex) {
+                ex.printStackTrace();
+            } catch (IllegalArgumentException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -68,8 +70,6 @@ public class GPSMonitor extends Service {
         public void onLocationChanged(Location location) {
             latitude = location.getLatitude();
             longitude = location.getLongitude();
-
-
         }
 
         @Override
@@ -104,7 +104,6 @@ public class GPSMonitor extends Service {
                     if (android.os.Build.VERSION.SDK_INT >= 23) {
                         if (ActivityCompat.checkSelfPermission(this,
                                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            Log.e("PERMISSION", "GRANTED");
                             mLocationManager.removeUpdates(mLocationListeners[i]);
                         }
                     } else {
@@ -112,7 +111,7 @@ public class GPSMonitor extends Service {
                     }
 
                 } catch (Exception ex) {
-                    Log.e(TAG, "fail to remove location listners, ignore", ex);
+                    ex.printStackTrace();
                 }
             }
         }
@@ -130,7 +129,6 @@ public class GPSMonitor extends Service {
         return super.stopService(name);
     }
 
-
     public static void ThreadConnectingSocket() {
         new Thread(new Runnable() {
             @Override
@@ -138,13 +136,11 @@ public class GPSMonitor extends Service {
                 while (true) {
                     try {
                         Thread.sleep(1000);
-                        Log.e("LA:", latitude + "LO:" + longitude);
+                        Log.e("Latitude ", latitude + " Longitude: " + longitude);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
                 }
-
             }
         }).start();
     }

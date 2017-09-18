@@ -3,7 +3,9 @@ package doapps.me.location.activity;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Handler;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -33,16 +35,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @BindView(R.id.longitude_text)
     TextView longitude;
 
-    boolean isFirst;
-
-    private Handler handler = new Handler();
-
-    private static final int PETICION_PERMISO_LOCALIZACION = 100;
-
     private GoogleMap mMap;
     private Marker marker;
 
     private GPSTracker gpsTracker;
+
+    boolean isFirst;
+
+    private static final int LOCATION_PERMISSION = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +56,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         gpsTracker = new GPSTracker(this);
-        Log.e("COORDINATES", gpsTracker.getLatitude() + ", " + gpsTracker.getLongitude());
-
-        //  startService(new Intent(this, GPSMonitor.class));
     }
 
     @Override
@@ -75,53 +72,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             ActivityCompat.requestPermissions(MapsActivity.this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    PETICION_PERMISO_LOCALIZACION);
+                    LOCATION_PERMISSION);
+
         } else {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
+            gpsTracker = new GPSTracker(this);
 
-                    while (true) {
-                        try {
-                            Thread.sleep(1000);
+            startService(new Intent(this, GPSMonitor.class));
 
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
+            if (gpsTracker.canGetLocation) {
+                addMarket(gpsTracker.getLatitude(), gpsTracker.getLongitude());
 
-                                    //  GPSTracker gpsTracker = new GPSTracker(MapsActivity.this);
-                                    addMarket(gpsTracker.getLatitude(), gpsTracker.getLongitude());
-
-                                    latitude.setText("" + gpsTracker.getLatitude());
-                                    longitude.setText("" + gpsTracker.getLongitude());
-
-                                    Log.e("LA", "" + gpsTracker.getLatitude() + " LO: " + gpsTracker.getLongitude());
-                                }
-                            });
-
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                }
-            }).start();
+                latitude.setText("" + gpsTracker.getLatitude());
+                longitude.setText("" + gpsTracker.getLongitude());
+            }
         }
     }
 
     public void addMarket(double lat, double lng) {
         if (!isFirst) {
             isFirst = true;
-            LatLng coordenada = new LatLng(lat, lng);
+            LatLng coordinate = new LatLng(lat, lng);
 
-            CameraUpdate ubication = CameraUpdateFactory.newLatLngZoom(coordenada, 16);
+            CameraUpdate location = CameraUpdateFactory.newLatLngZoom(coordinate, 16);
 
             if (mMap == null) {
             } else {
-                marker = mMap.addMarker(new MarkerOptions().position(coordenada)
-                        .draggable(false)
-                );
-                mMap.animateCamera(ubication);
+                marker = mMap.addMarker(new MarkerOptions().position(coordinate)
+                        .draggable(false));
+                mMap.animateCamera(location);
             }
         } else {
             marker.setPosition(new LatLng(lat, lng));
@@ -131,11 +109,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == PETICION_PERMISO_LOCALIZACION) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                myLocation();
-            }
+        if (requestCode == LOCATION_PERMISSION) {
+            myLocation();
         }
     }
 }
